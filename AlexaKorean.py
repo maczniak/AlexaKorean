@@ -125,7 +125,7 @@ class AlexaKorean:
 	
 	@staticmethod
 	def speak(s, notation = IPA):
-		for proc in [JamoProcessor()]:
+		for proc in [JamoProcessor(), DigitsProcessor()]:
 			s = proc.pattern().sub(proc.transform(), s)
 		splitted = AlexaKorean.parse_characters_by_type(s)
 		return "".join(map(partial(AlexaKorean._speak, notation = notation),
@@ -175,6 +175,24 @@ class JamoProcessor(AlexaKoreanProcessor):
 
 	def transform(self):
 		return lambda match: JamoProcessor.jamo_name_table[match.group(0)]
+
+class DigitsProcessor(AlexaKoreanProcessor):
+
+	digits = {
+		'0': '영', '1': '일', '2': '이', '3': '삼', '4': '사',
+		'5': '오', '6': '육', '7': '칠', '8': '팔', '9': '구',
+		'-': '빼기'
+	}
+
+	_pattern = re.compile('{[0-9]+(?:-[0-9]+)*}')
+
+	def pattern(self):
+		return DigitsProcessor._pattern
+
+	def transform(self):
+		return lambda match: "".join(
+			map(lambda c: DigitsProcessor.digits[c], match.group(0)[1:-1])
+		)
 
 #print(AlexaKorean.speak("짜장면"))
 
