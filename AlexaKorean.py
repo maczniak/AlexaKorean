@@ -3,6 +3,7 @@
 
 from __future__ import print_function, unicode_literals
 from functools import partial
+import re
 
 def concat(dlst): # flatten
 	return [x for lst in dlst for x in lst]
@@ -63,11 +64,11 @@ class AlexaKorean:
 		# ㄻ ㄼ ㄽ ㄾ ㄿ
 		("rieul-mieum","m","m"), ("rieul-bieup","l","l"), ("rieul-siot","l","l"), "rieul-tieut", "rieul-pieup",
 		# ㅀ ㅁ ㅂ ㅄ ㅅ
-		"rieul-hieut", ("mieum","m","m"), ("bieup","b","b"), ("bieup-siot","b","b"), "siot",
-	# ㅆ ㅇ ㅈ ㅊ ㅋ
-	("ssangsiot","d","d"), ("ieung","ŋ","N"), "jieut", "chieut", "kieuk",
-	# ㅌ ㅍ ㅎ
-	("tieut","t","t"), ("pieup","p","p"), ("hieut","d","d")
+		"rieul-hieut", ("mieum","m","m"), ("bieup","b","b"), ("bieup-siot","b","b"), ("siot","s","s"),
+		# ㅆ ㅇ ㅈ ㅊ ㅋ
+		("ssangsiot","d","d"), ("ieung","ŋ","N"), ("jieut","d͡ʒ","dZ"), ("chieut","t͡ʃ","tS"), ("kieuk","k","k"),
+		# ㅌ ㅍ ㅎ
+		("tieut","t","t"), ("pieup","p","p"), ("hieut","d","d")
 	]
 	
 	IPA = 1
@@ -124,7 +125,8 @@ class AlexaKorean:
 	
 	@staticmethod
 	def speak(s, notation = IPA):
-		ret = []
+		for proc in [JamoProcessor()]:
+			s = proc.pattern().sub(proc.transform(), s)
 		splitted = AlexaKorean.parse_characters_by_type(s)
 		return "".join(map(partial(AlexaKorean._speak, notation = notation),
 							splitted))
@@ -142,6 +144,37 @@ class AlexaKorean:
 			return '<say-as interpret-as="characters">%s</say-as>' % seg
 		else:
 			return seg
+
+class AlexaKoreanProcessor:
+	def pattern(self):
+		raise NotImplementError
+
+	def transform(self):
+		raise NotImplementError
+
+class JamoProcessor(AlexaKoreanProcessor):
+
+	jamo_name_table = {
+		'ㄱ': '기역', 'ㄲ': '쌍기역', 'ㄳ': '기역시옷', 'ㄴ': '니은', 'ㄵ': '니은지읒',
+		'ㄶ': '니은히읗', 'ㄷ': '디귿', 'ㄸ': '쌍디귿', 'ㄹ': '리을', 'ㄺ': '리을기역',
+		'ㄻ': '리을미음', 'ㄼ': '리을비읍', 'ㄽ': '리을시옷', 'ㄾ': '리을티읕', 'ㄿ': '리을피읖',
+		'ㅀ': '리을히읗', 'ㅁ': '미음', 'ㅂ': '비읍', 'ㅃ': '쌍비읍', 'ㅄ': '비읍시옷',
+		'ㅅ': '시옷', 'ㅆ': '쌍시옷', 'ㅇ': '이응', 'ㅈ': '지읒', 'ㅉ': '쌍지읒',
+		'ㅊ': '치읓', 'ㅋ': '키읔', 'ㅌ': '티읕', 'ㅍ': '피읖', 'ㅎ': '히읗',
+		'ㅏ': '아', 'ㅐ': '애', 'ㅑ': '야', 'ㅒ': '얘', 'ㅓ': '어',
+		'ㅔ': '에', 'ㅕ': '여', 'ㅖ': '예', 'ㅗ': '오', 'ㅘ': '오아',
+		'ㅙ': '오애', 'ㅚ': '오이', 'ㅛ': '요', 'ㅜ': '우', 'ㅝ': '우어',
+		'ㅞ': '우에', 'ㅟ': '우이', 'ㅠ': '유', 'ㅡ': '으', 'ㅢ': '으이',
+		'ㅣ': '이'
+	}
+
+	_pattern = re.compile('[ㄱ-ㅎㅏ-ㅣ]')
+
+	def pattern(self):
+		return JamoProcessor._pattern
+
+	def transform(self):
+		return lambda match: JamoProcessor.jamo_name_table[match.group(0)]
 
 #print(AlexaKorean.speak("짜장면"))
 

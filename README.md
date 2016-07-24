@@ -26,11 +26,13 @@ console][developer_console].
 ## TODO
 
 * complete a phonemic mapping table
-* support jamo characters ([reference][unicode_jamo])
 * support numbers
+* support symbols
 * support phonological rules ([wikipedia][korean_phonology],
   [reference][standard])
+* use '을' or '를' properly
 * tell short vowels from long vowels
+* testcases
 * JavaScript version
 * package, deployable to AWS Lambda
 * sample output
