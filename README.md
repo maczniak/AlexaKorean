@@ -26,7 +26,7 @@ console][developer_console].
 ## TODO
 
 * complete a phonemic mapping table
-* support numbers
+* support ordinal numbers
 * support symbols
 * support phonological rules ([wikipedia][korean_phonology],
   [reference][standard])

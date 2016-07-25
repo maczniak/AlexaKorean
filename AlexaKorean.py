@@ -125,7 +125,7 @@ class AlexaKorean:
 	
 	@staticmethod
 	def speak(s, notation = IPA):
-		for proc in [JamoProcessor(), DigitsProcessor()]:
+		for proc in [JamoProcessor(), DigitsProcessor(), NumberProcessor()]:
 			s = proc.pattern().sub(proc.transform(), s)
 		splitted = AlexaKorean.parse_characters_by_type(s)
 		return "".join(map(partial(AlexaKorean._speak, notation = notation),
@@ -193,6 +193,66 @@ class DigitsProcessor(AlexaKoreanProcessor):
 		return lambda match: "".join(
 			map(lambda c: DigitsProcessor.digits[c], match.group(0)[1:-1])
 		)
+
+class NumberProcessor(AlexaKoreanProcessor):
+
+	digits = {
+		'0': '영', '1': '일', '2': '이', '3': '삼', '4': '사',
+		'5': '오', '6': '육', '7': '칠', '8': '팔', '9': '구',
+		'.': '점'
+	}
+
+	digits_wo_zero = {
+		'1': '', '2': '이', '3': '삼', '4': '사', '5': '오',
+		'6': '육', '7': '칠', '8': '팔', '9': '구'
+	}
+
+	_pattern = re.compile(
+					'(?P<minus>-)?(?P<integral>[0-9]+)(?P<decimal>\.[0-9]+)?')
+
+	def pattern(self):
+		return NumberProcessor._pattern
+
+	def transform(self):
+		def lbd(match):
+			ret = []
+
+			if match.group('minus'):
+				ret.append('마이너스')
+
+			int_part = match.group('integral')[::-1]
+			if int_part == "0":
+				ret.append("영")
+			else:
+				int = []
+				delim = self.delim_gen()
+				for c in int_part:
+					delim
+					int.append(next(delim)(c))
+				int.reverse()
+				ret.append("".join(int).rstrip())
+
+			if match.group('decimal'):
+				ret = ret + map(lambda c: NumberProcessor.digits[c],
+														match.group('decimal'))
+
+			return "".join(ret)
+
+		return lbd
+
+	def delim_gen(self):
+		delims = ["", "만 ", "억 ", "조 ", "경 ", "해 "]
+
+		while True:
+			dl = delims.pop(0)
+			yield lambda x: "일" + dl if x == '1' else \
+					(NumberProcessor.digits_wo_zero[x] + dl if x != '0' else dl)
+			yield lambda x: \
+					NumberProcessor.digits_wo_zero[x] + "십" if x != '0' else ""
+			yield lambda x: \
+					NumberProcessor.digits_wo_zero[x] + "백" if x != '0' else ""
+			yield lambda x: \
+					NumberProcessor.digits_wo_zero[x] + "천" if x != '0' else ""
 
 #print(AlexaKorean.speak("짜장면"))
 
