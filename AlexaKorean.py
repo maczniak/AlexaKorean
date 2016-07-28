@@ -125,7 +125,8 @@ class AlexaKorean:
 	
 	@staticmethod
 	def speak(s, notation = IPA):
-		for proc in [JamoProcessor(), DigitsProcessor(), NumberProcessor()]:
+		for proc in [JamoProcessor(), DigitsProcessor(), NumberProcessor(),
+					PostpositionProcessor()]:
 			s = proc.pattern().sub(proc.transform(), s)
 		splitted = AlexaKorean.parse_characters_by_type(s)
 		return "".join(map(partial(AlexaKorean._speak, notation = notation),
@@ -241,7 +242,7 @@ class NumberProcessor(AlexaKoreanProcessor):
 		return lbd
 
 	def delim_gen(self):
-		delims = ["", "만 ", "억 ", "조 ", "경 ", "해 "]
+		delims = ["", "만 ", "억 ", "조 ", "경 ", "해 ", "자 ", "양 ", "구 "]
 
 		while True:
 			dl = delims.pop(0)
@@ -253,6 +254,66 @@ class NumberProcessor(AlexaKoreanProcessor):
 					NumberProcessor.digits_wo_zero[x] + "백" if x != '0' else ""
 			yield lambda x: \
 					NumberProcessor.digits_wo_zero[x] + "천" if x != '0' else ""
+
+class PostpositionProcessor(AlexaKoreanProcessor):
+
+	_HAVE_FINAL_EXCEPT_RIEUL = 1
+	_HAVE_FINAL_RIEUL        = 2
+	_HAVE_NO_FINALS          = 3
+	_UNKNOWN                 = 4
+	_depend_on_final = {
+		("와", _HAVE_FINAL_EXCEPT_RIEUL): "와", ("와", _HAVE_FINAL_RIEUL): "와",
+			("와", _HAVE_NO_FINALS): "과",
+		("과", _HAVE_FINAL_EXCEPT_RIEUL): "와", ("과", _HAVE_FINAL_RIEUL): "와",
+			("과", _HAVE_NO_FINALS): "과",
+		("으로", _HAVE_FINAL_EXCEPT_RIEUL): "으로",
+			("으로", _HAVE_FINAL_RIEUL): "로", ("으로", _HAVE_NO_FINALS): "로",
+		("로", _HAVE_FINAL_EXCEPT_RIEUL): "으로",
+			("로", _HAVE_FINAL_RIEUL): "로", ("로", _HAVE_NO_FINALS): "로",
+		("은", _HAVE_FINAL_EXCEPT_RIEUL): "은", ("은", _HAVE_FINAL_RIEUL): "은",
+			("은", _HAVE_NO_FINALS): "는",
+		("는", _HAVE_FINAL_EXCEPT_RIEUL): "은", ("는", _HAVE_FINAL_RIEUL): "은",
+			("는", _HAVE_NO_FINALS): "는",
+		("을", _HAVE_FINAL_EXCEPT_RIEUL): "을", ("을", _HAVE_FINAL_RIEUL): "을",
+			("을", _HAVE_NO_FINALS): "를",
+		("를", _HAVE_FINAL_EXCEPT_RIEUL): "을", ("를", _HAVE_FINAL_RIEUL): "을",
+			("를", _HAVE_NO_FINALS): "를",
+		("이", _HAVE_FINAL_EXCEPT_RIEUL): "이", ("이", _HAVE_FINAL_RIEUL): "이",
+			("이", _HAVE_NO_FINALS): "가",
+		("가", _HAVE_FINAL_EXCEPT_RIEUL): "이", ("가", _HAVE_FINAL_RIEUL): "이",
+			("가", _HAVE_NO_FINALS): "가"
+	}
+
+	_pattern = re.compile('.{([와과로은는을를이가]|으로)}')
+
+	def pattern(self):
+		return PostpositionProcessor._pattern
+
+	def transform(self):
+		def lbd(match):
+			type = PostpositionProcessor._UNKNOWN
+			matched = match.group(0)
+			target = match.group(1)
+			prec = matched[0]
+			if prec >= "가" and prec <= "힣":
+				if (ord(prec) - 44032) % 28 == 0:
+					type = PostpositionProcessor._HAVE_NO_FINALS
+				elif (ord(prec) - 44032) % 28 == 8:
+					type = PostpositionProcessor._HAVE_FINAL_RIEUL
+				else:
+					type = PostpositionProcessor._HAVE_FINAL_EXCEPT_RIEUL
+			elif prec == "ㄹ":
+				type = PostpositionProcessor._HAVE_FINAL_RIEUL
+			elif prec >= "ㄱ" and prec <= "ㅎ":
+				type = PostpositionProcessor._HAVE_FINAL_EXCEPT_RIEUL
+			elif prec >= "ㅏ" and prec <= "ㅣ":
+				type = PostpositionProcessor._HAVE_NO_FINALS
+
+			if type == PostpositionProcessor._UNKNOWN:
+				return prec + target
+			return prec + PostpositionProcessor._depend_on_final[(target, type)]
+
+		return lbd
 
 #print(AlexaKorean.speak("짜장면"))
 

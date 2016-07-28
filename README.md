@@ -16,6 +16,13 @@ output3 = AlexaKorean.speak("hello world 예제", AlexaKorean.SAMPA)
 // hello world <phoneme alphabet="x-sampa" ph="jE.dZE.">예제</phoneme>
 ```
 
+format
+* `"철수{는} 서울{으로} 가서 음료{을} 마신다."` is turned into
+  `"철수는 서울로 가서 음료를 마신다."`. Affected characters are `{와}`, `{과}`,
+  `{으로}`, `{로}`, `{은}`, `{는}`, `{을}`, `{를}`, `{이}` and `{가}`.
+* `"123456 -3.141592"` speaks numbers.
+* `"{010-0000-0000} Intel {386}"` speaks each digit separately.
+
 You can hear outputs at Test > Voice Simulator in [developer
 console][developer_console].
 
@@ -30,7 +37,6 @@ console][developer_console].
 * support symbols
 * support phonological rules ([wikipedia][korean_phonology],
   [reference][standard])
-* use '을' or '를' properly
 * tell short vowels from long vowels
 * testcases
 * JavaScript version
