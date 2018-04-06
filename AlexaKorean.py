@@ -100,9 +100,9 @@ class AlexaKorean:
 		c = ord(ch)
 		c -= 44032
 		final = c % 28
-		c /= 28
+		c //= 28
 		medial = c % 21
-		c /= 21
+		c //= 21
 		initial = c
 		return (initial, medial, final)
 	
